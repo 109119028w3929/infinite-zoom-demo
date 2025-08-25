@@ -1,11 +1,17 @@
-# Ignore all frame images - too large for GitHub
-frames/
-*.jpg
-*.jpeg
-*.png
-*.mp4
+# Ignore VSCode settings
+.vscode/
 
-# Keep only the essential files
+# Keep frames folder and images
+# (remove rules that excluded them)
+# If you want to allow all frames:
+!frames/
+!frames/**
+!*.jpg
+!*.jpeg
+!*.png
+!*.mp4
+
+# Keep essential files
 !index.html
 !zoom.png
 !README.md
