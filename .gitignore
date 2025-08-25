@@ -1,0 +1,11 @@
+# Ignore all frame images - too large for GitHub
+frames/
+*.jpg
+*.jpeg
+*.png
+*.mp4
+
+# Keep only the essential files
+!index.html
+!zoom.png
+!README.md
