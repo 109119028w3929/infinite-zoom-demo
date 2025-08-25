@@ -1,15 +1,12 @@
 # Ignore VSCode settings
 .vscode/
 
-# Keep frames folder and images
-# (remove rules that excluded them)
-# If you want to allow all frames:
+# --- Remove global image ignores ---
+# (so that frames and images aren’t blocked)
+
+# Keep frames folder and its contents
 !frames/
 !frames/**
-!*.jpg
-!*.jpeg
-!*.png
-!*.mp4
 
 # Keep essential files
 !index.html
