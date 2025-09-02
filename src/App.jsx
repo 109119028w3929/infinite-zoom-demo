@@ -288,7 +288,7 @@ const FRAME_EXT = ".jpg";
 const PADDING = 4;
 const TOTAL_FRAMES = 2187;
 const BATCH_SIZE = 10;
-const PRELOAD_AHEAD = 2; // how many batches ahead/behind to preload
+const PRELOAD_AHEAD = 2;
 
 export default function App() {
   const canvasRef = useRef(null);
@@ -375,7 +375,7 @@ export default function App() {
 
   function ensureBatchLoaded(batchNum) {
     if (!loadedBatches[batchNum]) {
-      loadBatch(batchNum); // fire & forget
+      loadBatch(batchNum);
     }
   }
 
@@ -404,13 +404,11 @@ export default function App() {
       let sx, sy, sWidth, sHeight;
 
       if (imgAspect > canvasAspect) {
-        // Image wider → crop left/right
         sHeight = img.height;
         sWidth = img.height * canvasAspect;
         sx = (img.width - sWidth) / 2;
         sy = 0;
       } else {
-        // Image taller → crop top/bottom
         sWidth = img.width;
         sHeight = img.width / canvasAspect;
         sx = 0;
@@ -457,7 +455,7 @@ export default function App() {
     return () => cancelAnimationFrame(animationFrame);
   }, [isLoaded, loadedBatches]);
 
-  // --- Controls ---
+  // --- Controls (Wheel + Keys + Pinch + iOS Gesture) ---
   useEffect(() => {
     function handleWheel(e) {
       if (!isLoaded) return;
@@ -493,9 +491,75 @@ export default function App() {
     }
     window.addEventListener("keydown", handleKey);
 
+    // --- Pinch-to-zoom (Android/Chrome) ---
+    let lastDistance = null;
+    function handleTouchStart(e) {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastDistance = Math.sqrt(dx * dx + dy * dy);
+      }
+    }
+    function handleTouchMove(e) {
+      if (e.touches.length === 2 && lastDistance) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const newDistance = Math.sqrt(dx * dx + dy * dy);
+        const delta = newDistance - lastDistance;
+        const sensitivity = 0.05; // pinch sensitivity
+        targetZoomRef.current = Math.max(
+          0,
+          Math.min(TOTAL_FRAMES - 1, targetZoomRef.current - delta * sensitivity)
+        );
+        lastDistance = newDistance;
+      }
+    }
+    function handleTouchEnd() {
+      lastDistance = null;
+    }
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+
+    // --- Native iOS Safari pinch ---
+    function handleGestureStart(e) {
+      e.preventDefault();
+    }
+    function handleGestureChange(e) {
+      e.preventDefault();
+      const scale = e.scale;
+      const sensitivity = 50; // adjust for smoothness
+      if (scale > 1) {
+        targetZoomRef.current = Math.max(
+          0,
+          targetZoomRef.current - (scale - 1) * sensitivity
+        );
+      } else {
+        targetZoomRef.current = Math.min(
+          TOTAL_FRAMES - 1,
+          targetZoomRef.current + (1 - scale) * sensitivity
+        );
+      }
+    }
+    function handleGestureEnd(e) {
+      e.preventDefault();
+    }
+
+    window.addEventListener("gesturestart", handleGestureStart);
+    window.addEventListener("gesturechange", handleGestureChange);
+    window.addEventListener("gestureend", handleGestureEnd);
+
     return () => {
       window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("keydown", handleKey);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("gesturestart", handleGestureStart);
+      window.removeEventListener("gesturechange", handleGestureChange);
+      window.removeEventListener("gestureend", handleGestureEnd);
     };
   }, [isLoaded]);
 
@@ -567,8 +631,8 @@ export default function App() {
             fontFamily: "sans-serif",
           }}
         >
-          <div>📱 Pinch to zoom on mobile</div>
-          <div>🖱️ Scroll or arrow keys on desktop</div>
+          <div>📱 Pinch to zoom</div>
+          <div>🖱️ Scroll or arrow keys</div>
           <div>
             Frame: {Math.floor(zoomRef.current) + 1} / {TOTAL_FRAMES}
           </div>
