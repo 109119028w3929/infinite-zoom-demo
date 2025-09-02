@@ -280,7 +280,6 @@
 
 
 
-
 import { useEffect, useRef, useState } from "react";
 
 const FRAME_PATH = "/frames/frame_";
@@ -508,10 +507,13 @@ export default function App() {
         const newDistance = Math.sqrt(dx * dx + dy * dy);
         const delta = newDistance - lastDistance;
         const sensitivity = 0.05; // pinch sensitivity
+
+        // ✅ FIX: invert logic (spread fingers -> zoom in / pinch -> zoom out)
         targetZoomRef.current = Math.max(
           0,
-          Math.min(TOTAL_FRAMES - 1, targetZoomRef.current - delta * sensitivity)
+          Math.min(TOTAL_FRAMES - 1, targetZoomRef.current + delta * sensitivity)
         );
+
         lastDistance = newDistance;
       }
     }
@@ -531,15 +533,17 @@ export default function App() {
       e.preventDefault();
       const scale = e.scale;
       const sensitivity = 50; // adjust for smoothness
+
+      // ✅ FIX: invert logic here too
       if (scale > 1) {
-        targetZoomRef.current = Math.max(
-          0,
-          targetZoomRef.current - (scale - 1) * sensitivity
-        );
-      } else {
         targetZoomRef.current = Math.min(
           TOTAL_FRAMES - 1,
-          targetZoomRef.current + (1 - scale) * sensitivity
+          targetZoomRef.current + (scale - 1) * sensitivity
+        );
+      } else {
+        targetZoomRef.current = Math.max(
+          0,
+          targetZoomRef.current - (1 - scale) * sensitivity
         );
       }
     }
@@ -641,3 +645,4 @@ export default function App() {
     </div>
   );
 }
+
